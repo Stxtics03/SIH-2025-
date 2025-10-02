@@ -2,31 +2,26 @@ import React, { useState, useEffect } from 'react';
 import { Activity, Wifi, WifiOff, AlertTriangle, CheckCircle, Navigation, Zap, Thermometer, Wind, Radio } from 'lucide-react';
 
 const LunarHabitatUI = () => {
-  const [selectedRobot, setSelectedRobot] = useState(null);
-  const [time, setTime] = useState(new Date());
-  const [alerts, setAlerts] = useState([
-    { id: 1, level: 'info', msg: 'Robot-3 completed sector B scan', time: '14:23' },
-    { id: 2, level: 'warning', msg: 'Radiation spike detected in airlock', time: '14:18' }
-  ]);
+ const [robots, setRobots] = useState([]);
+const [envData, setEnvData] = useState([]);
+const [alerts, setAlerts] = useState([]);
 
-  const robots = [
-    { id: 1, name: 'SCOUT-1', status: 'active', battery: 87, position: { x: 120, y: 180 }, task: 'Mapping Sector A' },
-    { id: 2, name: 'SCOUT-2', status: 'active', battery: 92, position: { x: 280, y: 220 }, task: 'Environmental Scan' },
-    { id: 3, name: 'SCOUT-3', status: 'charging', battery: 34, position: { x: 200, y: 150 }, task: 'Standby Mode' },
-    { id: 4, name: 'MAINT-1', status: 'active', battery: 78, position: { x: 340, y: 160 }, task: 'System Diagnostics' }
-  ];
+useEffect(() => {
+  const ws = new WebSocket("ws://localhost:8765");
+  ws.onmessage = (msg) => {
+    const data = JSON.parse(msg.data);
+    setRobots(data.robots);
+    setAlerts(data.alerts);
 
-  const envData = [
-    { label: 'O₂ Level', value: '21.2%', status: 'optimal', icon: Wind },
-    { label: 'Pressure', value: '101.3 kPa', status: 'optimal', icon: Activity },
-    { label: 'Temperature', value: '22.4°C', status: 'optimal', icon: Thermometer },
-    { label: 'Radiation', value: '0.12 mSv/h', status: 'warning', icon: Radio }
-  ];
-
-  useEffect(() => {
-    const timer = setInterval(() => setTime(new Date()), 1000);
-    return () => clearInterval(timer);
-  }, []);
+    setEnvData([
+      { label: 'O₂ Level', value: data.environment.O2 + '%', status: 'optimal', icon: Wind },
+      { label: 'Pressure', value: data.environment.Pressure + ' kPa', status: 'optimal', icon: Activity },
+      { label: 'Temperature', value: data.environment.Temperature + '°C', status: 'optimal', icon: Thermometer },
+      { label: 'Radiation', value: data.environment.Radiation + ' mSv/h', status: 'warning', icon: Radio }
+    ]);
+  };
+  return () => ws.close();
+}, []);
 
   const formatTime = (date) => {
     return date.toLocaleTimeString('en-US', { hour12: false });
